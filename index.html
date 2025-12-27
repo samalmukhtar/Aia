@@ -929,6 +929,70 @@
             50% { transform: translateY(-20px); }
             100% { transform: translateY(0px); }
         }
+
+        /* نموذج إدخال النص للهواتف المحمولة */
+        .mobile-input-container {
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+        }
+
+        .mobile-input-container.active {
+            display: flex;
+        }
+
+        .mobile-input {
+            padding: 15px 20px;
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .mobile-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .mobile-submit-btn {
+            padding: 12px 25px;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            align-self: flex-start;
+        }
+
+        .mobile-submit-btn:hover {
+            background: #0d8c6c;
+            transform: translateY(-2px);
+        }
+
+        .mobile-toggle {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-toggle:hover {
+            background: var(--accent);
+            color: var(--primary);
+        }
     </style>
 </head>
 <body>
@@ -1114,6 +1178,14 @@
                 </button>
                 <div class="assistant-text" id="assistantText">انقر للتحدث</div>
                 
+                <!-- نموذج إدخال النص للهواتف المحمولة -->
+                <div class="mobile-input-container" id="mobileInputContainer">
+                    <textarea class="mobile-input" id="mobileInput" placeholder="اكتب سؤالك أو طلبك هنا..."></textarea>
+                    <button class="mobile-submit-btn" id="mobileSubmitBtn">إرسال</button>
+                </div>
+                
+                <button class="mobile-toggle" id="mobileToggle">استخدام الإدخال النصي بدلاً من الصوت</button>
+                
                 <div class="assistant-response" id="assistantResponse">
                     <div class="response-text" id="responseText"></div>
                     <div class="response-actions">
@@ -1187,6 +1259,7 @@
         let speechEnabled = false;
         let silenceCounter = 0;
         let lastCommand = '';
+        let isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
         // تهيئة التعرف على الكلام
         function initSpeechRecognition() {
@@ -1228,7 +1301,9 @@
                     }
                 };
             } else {
-                alert('المتصفح لا يدعم التعرف على الكلام. يرجى استخدام Chrome أو Edge للحصول على أفضل تجربة.');
+                // إخفاء زر المايك إذا لم يكن مدعوماً
+                document.getElementById('mainAssistantBtn').style.display = 'none';
+                document.getElementById('assistantText').textContent = 'التعرف على الكلام غير مدعوم في متصفحك';
             }
         }
         
@@ -1451,6 +1526,29 @@
             }, 1000);
         }
         
+        // معالجة إدخال النص للهواتف المحمولة
+        function processTextInput() {
+            const text = document.getElementById('mobileInput').value;
+            if (text.trim() !== '') {
+                processVoiceCommand(text);
+                document.getElementById('mobileInput').value = '';
+            }
+        }
+        
+        // تبديل بين المايك وإدخال النص
+        function toggleInputMethod() {
+            const container = document.getElementById('mobileInputContainer');
+            const toggleBtn = document.getElementById('mobileToggle');
+            
+            if (container.classList.contains('active')) {
+                container.classList.remove('active');
+                toggleBtn.textContent = 'استخدام الإدخال النصي بدلاً من الصوت';
+            } else {
+                container.classList.add('active');
+                toggleBtn.textContent = 'استخدام المايك بدلاً من الإدخال النصي';
+            }
+        }
+        
         // تهيئة التطبيق عند تحميل الصفحة
         document.addEventListener('DOMContentLoaded', function() {
             initSpeechRecognition();
@@ -1484,6 +1582,17 @@
                 }
             });
             
+            // معالجات إدخال النص للهواتف المحمولة
+            document.getElementById('mobileSubmitBtn').addEventListener('click', processTextInput);
+            document.getElementById('mobileInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    processTextInput();
+                }
+            });
+            
+            document.getElementById('mobileToggle').addEventListener('click', toggleInputMethod);
+            
             // عرض رسالة ترحيبية
             setTimeout(() => {
                 if (!sessionStorage.getItem('welcomeShown')) {
@@ -1491,6 +1600,12 @@
                     sessionStorage.setItem('welcomeShown', 'true');
                 }
             }, 1000);
+            
+            // إظهار إدخال النص تلقائياً على الأجهزة المحمولة
+            if (isMobile) {
+                document.getElementById('mobileInputContainer').classList.add('active');
+                document.getElementById('mobileToggle').textContent = 'استخدام المايك بدلاً من الإدخال النصي';
+            }
         });
     </script>
 </body>
